@@ -1,7 +1,7 @@
 """
 Apify Data Fetcher.
-Mode 1 (default): Fetch data from the latest Apify dataset (pre-scheduled run) — instant.  # noqa: E501
-Mode 2 (--trigger): Trigger a new Actor run and wait — slow, 10-15min.
+Mode 1 (default): Fetch from latest Apify dataset.
+Mode 2 (--trigger): Trigger new Actor run.
 """
 import os
 import sys
@@ -17,7 +17,10 @@ from apify_client import ApifyClient
 from dotenv import load_dotenv
 
 load_dotenv()
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s [%(levelname)s] %(message)s")  # noqa: E501
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 ACTOR_ID = "apify/facebook-posts-scraper"
@@ -39,16 +42,28 @@ def fetch_latest_dataset(client: ApifyClient, config: dict) -> list[dict]:
         logger.info(f"Fetching latest run dataset from Actor: {ACTOR_ID}")
         runs = client.actor(ACTOR_ID).runs().list(limit=1, desc=True)
         if not runs.items:
-            logger.error("No previous runs found. Run the Actor manually on Apify Console first, or use --trigger.")  # noqa: E501
+            logger.error(
+                "No previous runs found. "
+                "Run the Actor on Apify Console "
+                "first, or use --trigger."
+            )
             return []
         last_run = runs.items[0]
         dataset_id = last_run.get("defaultDatasetId")
         run_status = last_run.get("status")
         finished_at = last_run.get("finishedAt", "unknown")
-        logger.info(f"Latest run: status={run_status}, finished={finished_at}, dataset={dataset_id}")  # noqa: E501
+        logger.info(
+            f"Latest run: status={run_status}, "
+            f"finished={finished_at}, "
+            f"dataset={dataset_id}"
+        )
 
         if run_status != "SUCCEEDED":
-            logger.warning(f"Latest run status is '{run_status}', data may be incomplete")  # noqa: E501
+            logger.warning(
+                f"Latest run status is "
+                f"'{run_status}', "
+                "data may be incomplete"
+            )
 
         items = list(client.dataset(dataset_id).iterate_items())
 
@@ -58,7 +73,14 @@ def fetch_latest_dataset(client: ApifyClient, config: dict) -> list[dict]:
 
 def trigger_new_run(client: ApifyClient, config: dict) -> list[dict]:
     scraper_cfg = config.get("scraper", {})
-    page_url = config.get("page", {}).get("url", "https://www.facebook.com/hoaloprisonrelic/")  # noqa: E501
+    default_url = (
+        "https://www.facebook.com/"
+        "hoaloprisonrelic/"
+    )
+    page_url = (
+        config.get("page", {})
+        .get("url", default_url)
+    )
     max_posts = scraper_cfg.get("max_posts", 500)
 
     run_input = {
@@ -67,12 +89,19 @@ def trigger_new_run(client: ApifyClient, config: dict) -> list[dict]:
     }
 
     logger.info(f"Triggering new Actor run: {ACTOR_ID}")
-    logger.info(f"Page: {page_url} | Max posts: {max_posts}")
+    logger.info(
+        f"Page: {page_url} | "
+        f"Max posts: {max_posts}"
+    )
     logger.info("This will take 10-15 minutes...")
 
     run = client.actor(ACTOR_ID).call(run_input=run_input)
     dataset_id = run["defaultDatasetId"]
-    logger.info(f"Run finished. Dataset: https://console.apify.com/storage/datasets/{dataset_id}")  # noqa: E501
+    logger.info(
+        f"Run finished. Dataset: "
+        f"https://console.apify.com/"
+        f"storage/datasets/{dataset_id}"
+    )
 
     items = list(client.dataset(dataset_id).iterate_items())
     logger.info(f"Collected {len(items)} items")
@@ -109,27 +138,45 @@ def normalize_items(items: list[dict]) -> pd.DataFrame:
     df = pd.DataFrame(rows)
 
     if "created_time" in df.columns and not df.empty:
-        df["created_time"] = pd.to_datetime(df["created_time"], errors="coerce")
-        df = df.sort_values("created_time", ascending=False)
+        df["created_time"] = pd.to_datetime(
+            df["created_time"], errors="coerce"
+        )
+        df = df.sort_values(
+            "created_time", ascending=False
+        )
 
     return df
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch Facebook data from Apify")
-    parser.add_argument("--config", default="config/pipeline.yaml")
+    parser = argparse.ArgumentParser(
+        description="Fetch Facebook data"
+    )
+    parser.add_argument(
+        "--config",
+        default="config/pipeline.yaml"
+    )
     parser.add_argument("--output", default="data/raw")
-    parser.add_argument("--trigger", action="store_true", help="Trigger new Actor run instead of fetching latest dataset")  # noqa: E501
+    parser.add_argument(
+        "--trigger", action="store_true",
+        help="Trigger new Actor run"
+    )
     args = parser.parse_args()
 
     token = os.getenv("APIFY_API_TOKEN")
     if not token:
-        logger.error("APIFY_API_TOKEN not set. Add it to .env file.")
+        logger.error(
+            "APIFY_API_TOKEN not set. "
+            "Add it to .env file."
+        )
         sys.exit(1)
 
     config = load_config(args.config)
     client = ApifyClient(token)
-    page_name = config.get("page", {}).get("name", "hoa_lo")
+    page_name = (
+        config.get("page", {})
+        .get("name", "hoa_lo")
+    )
 
     if args.trigger:
         items = trigger_new_run(client, config)
@@ -137,7 +184,10 @@ def main():
         items = fetch_latest_dataset(client, config)
 
     if not items:
-        logger.error("No data fetched. Check Apify Console for available datasets.")
+        logger.error(
+            "No data fetched. Check Apify "
+            "Console for available datasets."
+        )
         sys.exit(1)
 
     df = normalize_items(items)
@@ -146,12 +196,20 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     csv_path = output_dir / f"{page_name}_posts.csv"
-    df.to_csv(csv_path, index=False, encoding="utf-8-sig")
-    logger.info(f"Saved {len(df)} posts to {csv_path}")
+    df.to_csv(
+        csv_path, index=False,
+        encoding="utf-8-sig"
+    )
+    logger.info(
+        f"Saved {len(df)} posts to {csv_path}"
+    )
 
     json_path = output_dir / f"{page_name}_raw.json"
     with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(items, f, indent=2, ensure_ascii=False, default=str)
+        json.dump(
+            items, f, indent=2,
+            ensure_ascii=False, default=str
+        )
     logger.info(f"Saved raw JSON to {json_path}")
 
     meta = {
@@ -160,12 +218,21 @@ def main():
         "actor": ACTOR_ID,
         "total_posts": len(df),
         "date_range": {
-            "earliest": str(df["created_time"].min()) if not df.empty else None,
-            "latest": str(df["created_time"].max()) if not df.empty else None,
+            "earliest": (
+                str(df["created_time"].min())
+                if not df.empty else None
+            ),
+            "latest": (
+                str(df["created_time"].max())
+                if not df.empty else None
+            ),
         },
     }
     with open(output_dir / "scrape_metadata.json", "w") as f:
-        json.dump(meta, f, indent=2, ensure_ascii=False)
+        json.dump(
+            meta, f, indent=2,
+            ensure_ascii=False
+        )
     logger.info("Done!")
 
 
