@@ -1,0 +1,137 @@
+name: Weekly Analysis Pipeline
+
+on:
+  schedule:
+    # Every Monday at 02:00 UTC (09:00 Vietnam time)
+    - cron: "0 2 * * 1"
+  workflow_dispatch:
+    inputs:
+      data_source:
+        description: "Data source: 'local' (existing CSV) or 'apify' (fetch fresh)"
+        required: true
+        default: "local"
+        type: choice
+        options:
+          - local
+          - apify
+      trigger_apify:
+        description: "Trigger new Apify run (only with data_source=apify)"
+        required: false
+        default: false
+        type: boolean
+      send_email:
+        description: "Send report via email"
+        required: false
+        default: true
+        type: boolean
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install ruff
+      - run: ruff check src/ tests/ --select E,F,W
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install -r requirements.txt
+      - run: pip install pytest
+      - run: pytest tests/ -v
+
+  pipeline:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Determine data source
+        id: source
+        run: |
+          # Scheduled runs use apify, manual runs use input
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "source=apify" >> $GITHUB_OUTPUT
+            echo "trigger=false" >> $GITHUB_OUTPUT
+          else
+            echo "source=${{ inputs.data_source }}" >> $GITHUB_OUTPUT
+            echo "trigger=${{ inputs.trigger_apify }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run pipeline (local data)
+        if: steps.source.outputs.source == 'local'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python src/pipeline.py --data-source local --skip email
+
+      - name: Run pipeline (Apify data)
+        if: steps.source.outputs.source == 'apify' && steps.source.outputs.trigger == 'false'
+        env:
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python src/pipeline.py --data-source apify --skip email
+
+      - name: Run pipeline (Apify trigger new run)
+        if: steps.source.outputs.source == 'apify' && steps.source.outputs.trigger == 'true'
+        env:
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python src/pipeline.py --data-source apify --trigger --skip email
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-results
+          path: |
+            output/*.csv
+            output/*.json
+            output/*.png
+            reports/
+          retention-days: 30
+
+  send-email:
+    needs: pipeline
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'schedule') ||
+      (github.event_name == 'workflow_dispatch' && inputs.send_email == true)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: analysis-results
+
+      - name: Send email
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
+        run: python src/email_sender.py
