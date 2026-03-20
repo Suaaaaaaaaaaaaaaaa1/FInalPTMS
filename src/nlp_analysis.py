@@ -99,7 +99,7 @@ df_text['token_count'] = df_text['tokens'].apply(len)
 
 print(f"✅ Preprocessing complete")
 print(f"Avg tokens per post: {df_text['token_count'].mean():.1f}")
-print(f"Total unique tokens: {len(set([t for tokens in df_text['tokens'] for t in tokens])):,}")
+print(f"Total unique tokens: {len(set([t for tokens in df_text['tokens'] for t in tokens])):,}")  # noqa: E501
 
 # ===========================================================================
 # 3. TOPIC MODELING (LDA)
@@ -200,11 +200,11 @@ for i, v in enumerate(topic_counts.values):
 
 ax = axes[0, 1]
 labels = [f"Topic {i}\n({topic_counts[i]} posts)" for i in topic_counts.index]
-ax.pie(topic_counts.values, labels=labels, autopct='%1.1f%%', startangle=90, colors=colors)
+ax.pie(topic_counts.values, labels=labels, autopct='%1.1f%%', startangle=90, colors=colors)  # noqa: E501
 ax.set_title('Topic Distribution (%)', fontweight='bold', fontsize=14)
 
 ax = axes[1, 0]
-topic_engagement = df_topics_valid.groupby('topic_id')['engagement_total'].mean().sort_index()
+topic_engagement = df_topics_valid.groupby('topic_id')['engagement_total'].mean().sort_index()  # noqa: E501
 ax.bar(range(len(topic_engagement)), topic_engagement.values, color=colors)
 ax.set_xlabel('Topic ID')
 ax.set_ylabel('Avg Engagement')
@@ -216,7 +216,7 @@ for i, v in enumerate(topic_engagement.values):
 ax = axes[1, 1]
 df_topics_time = df_topics_valid[df_topics_valid['year_month'].notna()].copy()
 if len(df_topics_time) > 0:
-    topic_time = df_topics_time.groupby(['year_month', 'topic_id']).size().unstack(fill_value=0)
+    topic_time = df_topics_time.groupby(['year_month', 'topic_id']).size().unstack(fill_value=0)  # noqa: E501
     topic_time.plot(kind='area', stacked=True, ax=ax, alpha=0.7, color=colors)
     ax.set_xlabel('Month')
     ax.set_ylabel('Number of Posts')
@@ -236,7 +236,8 @@ print("✅ nlp_01_topic_modeling.png")
 print("\nAnalyzing sentiment...")
 
 POSITIVE_WORDS = set([
-    'tuyệt', 'đẹp', 'hay', 'tốt', 'thích', 'yêu', 'xuất_sắc', 'ấn_tượng',
+    'tuyệt', 'đẹp', 'hay', 'tốt', 'thích',
+    'yêu', 'xuất_sắc', 'ấn_tượng',
     'tuyệt_vời', 'hoàn_hảo', 'đáng', 'great', 'good', 'excellent',
     'amazing', 'wonderful', 'love', 'nice',
     'tự_hào', 'vinh_quang', 'anh_dũng', 'kiên_cường', 'vẻ_vang',
@@ -284,14 +285,14 @@ fig, axes = plt.subplots(2, 2, figsize=(18, 12))
 ax = axes[0, 0]
 sentiment_counts = df_text['sentiment'].value_counts()
 c = [colors_sent.get(s, 'gray') for s in sentiment_counts.index]
-ax.pie(sentiment_counts.values, labels=sentiment_counts.index, autopct='%1.1f%%', startangle=90, colors=c)
+ax.pie(sentiment_counts.values, labels=sentiment_counts.index, autopct='%1.1f%%', startangle=90, colors=c)  # noqa: E501
 ax.set_title('Sentiment Distribution', fontweight='bold', fontsize=14)
 
 ax = axes[0, 1]
 df_text_time = df_text[df_text['year_month'].notna()].copy()
-sent_time = df_text_time.groupby(['year_month', 'sentiment']).size().unstack(fill_value=0)
+sent_time = df_text_time.groupby(['year_month', 'sentiment']).size().unstack(fill_value=0)  # noqa: E501
 sent_time_pct = sent_time.div(sent_time.sum(axis=1), axis=0) * 100
-sent_time_pct.plot(kind='bar', stacked=True, ax=ax, color=[colors_sent.get(col, 'gray') for col in sent_time_pct.columns])
+sent_time_pct.plot(kind='bar', stacked=True, ax=ax, color=[colors_sent.get(col, 'gray') for col in sent_time_pct.columns])  # noqa: E501
 ax.set_xlabel('Month')
 ax.set_ylabel('Percentage (%)')
 ax.set_title('Sentiment Trends Over Time', fontweight='bold', fontsize=14)
@@ -310,7 +311,7 @@ ax.set_title('Engagement by Sentiment', fontweight='bold', fontsize=14)
 ax.grid(axis='y', alpha=0.3)
 
 ax = axes[1, 1]
-ax.hist(df_text['sentiment_score'], bins=20, color='steelblue', edgecolor='black', alpha=0.7)
+ax.hist(df_text['sentiment_score'], bins=20, color='steelblue', edgecolor='black', alpha=0.7)  # noqa: E501
 ax.axvline(0, color='red', linestyle='--', linewidth=2, label='Neutral')
 ax.set_xlabel('Sentiment Score')
 ax.set_ylabel('Frequency')
@@ -361,7 +362,7 @@ hoalo_keywords = {
 }
 
 for keyword in hoalo_keywords.keys():
-    hoalo_keywords[keyword] = sum(1 for tokens in df_text['tokens'] if keyword in tokens)
+    hoalo_keywords[keyword] = sum(1 for tokens in df_text['tokens'] if keyword in tokens)  # noqa: E501
 
 # --- Keyword Visualization ---
 fig, axes = plt.subplots(2, 2, figsize=(20, 14))
@@ -372,7 +373,7 @@ wordcloud = WordCloud(width=800, height=400, background_color='white',
                       colormap='viridis', max_words=100).generate(all_text)
 ax.imshow(wordcloud, interpolation='bilinear')
 ax.axis('off')
-ax.set_title('Word Cloud - All Posts (Stopwords Removed)', fontweight='bold', fontsize=14)
+ax.set_title('Word Cloud - All Posts (Stopwords Removed)', fontweight='bold', fontsize=14)  # noqa: E501
 
 ax = axes[0, 1]
 top_20_words = word_freq.most_common(20)
@@ -426,7 +427,7 @@ print("=" * 80)
 df_analysis = df_text[df_text['topic_id'] >= 0].copy()
 print(f"Analyzing {len(df_analysis)} posts with valid topics")
 
-topic_sentiment = pd.crosstab(df_analysis['topic_id'], df_analysis['sentiment'], normalize='index') * 100
+topic_sentiment = pd.crosstab(df_analysis['topic_id'], df_analysis['sentiment'], normalize='index') * 100  # noqa: E501
 print("\nSentiment distribution by topic (%):")
 print(topic_sentiment.round(1))
 
@@ -458,7 +459,7 @@ ax1.set_xlabel('Sentiment')
 ax1.set_ylabel('Topic ID')
 
 ax2 = fig.add_subplot(gs[1, 0])
-topic_eng = df_text.groupby('topic_id')['engagement_total'].mean().sort_values(ascending=False)
+topic_eng = df_text.groupby('topic_id')['engagement_total'].mean().sort_values(ascending=False)  # noqa: E501
 ax2.barh(range(len(topic_eng)), topic_eng.values, color='green', alpha=0.7)
 ax2.set_yticks(range(len(topic_eng)))
 ax2.set_yticklabels([f"Topic {i}" for i in topic_eng.index])
@@ -468,7 +469,7 @@ ax2.grid(axis='x', alpha=0.3)
 
 ax3 = fig.add_subplot(gs[1, 1])
 topic_counts_all = df_text['topic_id'].value_counts().sort_index()
-ax3.bar(range(len(topic_counts_all)), topic_counts_all.values, color='steelblue', alpha=0.7)
+ax3.bar(range(len(topic_counts_all)), topic_counts_all.values, color='steelblue', alpha=0.7)  # noqa: E501
 ax3.set_xticks(range(len(topic_counts_all)))
 ax3.set_xticklabels([f"T{i}" for i in topic_counts_all.index])
 ax3.set_ylabel('Number of Posts')
@@ -476,9 +477,9 @@ ax3.set_title('Posts Distribution by Topic', fontweight='bold', fontsize=12)
 ax3.grid(axis='y', alpha=0.3)
 
 ax4 = fig.add_subplot(gs[1, 2])
-topic_sent_pct = pd.crosstab(df_text['topic_id'], df_text['sentiment'], normalize='index') * 100
+topic_sent_pct = pd.crosstab(df_text['topic_id'], df_text['sentiment'], normalize='index') * 100  # noqa: E501
 topic_sent_pct.plot(kind='bar', stacked=True, ax=ax4,
-                    color=[colors_sent.get(col, 'gray') for col in topic_sent_pct.columns])
+                    color=[colors_sent.get(col, 'gray') for col in topic_sent_pct.columns])  # noqa: E501
 ax4.set_xlabel('Topic ID')
 ax4.set_ylabel('Percentage (%)')
 ax4.set_title('Sentiment % by Topic', fontweight='bold', fontsize=12)
@@ -487,7 +488,7 @@ ax4.grid(axis='y', alpha=0.3)
 plt.setp(ax4.xaxis.get_majorticklabels(), rotation=0)
 
 ax5 = fig.add_subplot(gs[2, 0])
-topic_eng_sorted = df_text[df_text['topic_id'] >= 0].groupby('topic_id')['engagement_total'].mean().sort_values(ascending=True)
+topic_eng_sorted = df_text[df_text['topic_id'] >= 0].groupby('topic_id')['engagement_total'].mean().sort_values(ascending=True)  # noqa: E501
 ax5.barh(range(len(topic_eng_sorted)), topic_eng_sorted.values,
          color=plt.cm.RdYlGn(np.linspace(0.2, 0.8, len(topic_eng_sorted))))
 ax5.set_yticks(range(len(topic_eng_sorted)))
@@ -517,7 +518,7 @@ ax7.set_title('Avg Engagement by Sentiment', fontweight='bold', fontsize=12)
 ax7.grid(axis='y', alpha=0.3)
 
 plt.suptitle('COMPREHENSIVE NLP INSIGHTS', fontsize=18, fontweight='bold')
-plt.savefig(f'{OUTPUT_DIR}/nlp_04_comprehensive_insights.png', dpi=300, bbox_inches='tight')
+plt.savefig(f'{OUTPUT_DIR}/nlp_04_comprehensive_insights.png', dpi=300, bbox_inches='tight')  # noqa: E501
 plt.close()
 print("✅ nlp_04_comprehensive_insights.png")
 
@@ -531,7 +532,7 @@ df_text_export = df_text[[
     'engagement_total', 'reactions_total', 'comment_count', 'share_count'
 ]].copy()
 
-df_text_export.to_csv(f'{OUTPUT_DIR}/posts_nlp_enriched.csv', index=False, encoding='utf-8-sig')
+df_text_export.to_csv(f'{OUTPUT_DIR}/posts_nlp_enriched.csv', index=False, encoding='utf-8-sig')  # noqa: E501
 print(f"\n✅ Saved: posts_nlp_enriched.csv")
 
 nlp_report = {
@@ -546,7 +547,7 @@ nlp_report = {
         'topic_distribution': topic_counts.to_dict(),
         'topic_labels': topic_labels,
         'best_topic': int(best_topic),
-        'best_topic_engagement': float(topic_stats.loc[best_topic, 'engagement_total_mean'])
+        'best_topic_engagement': float(topic_stats.loc[best_topic, 'engagement_total_mean'])  # noqa: E501
     },
     'sentiment': {
         'distribution': sentiment_dist.to_dict(),
@@ -560,7 +561,7 @@ nlp_report = {
         'hoalo_keywords': {k: int(v) for k, v in hoalo_keywords.items() if v > 0}
     },
     'insights': {
-        'engagement_sentiment_corr': float(df_text[['sentiment_score', 'engagement_total']].corr().iloc[0, 1]),
+        'engagement_sentiment_corr': float(df_text[['sentiment_score', 'engagement_total']].corr().iloc[0, 1]),  # noqa: E501
         'engagement_length_corr': float(corr),
         'best_sentiment': str(sent_eng.idxmax()),
         'best_sentiment_engagement': float(sent_eng.max())
@@ -577,5 +578,5 @@ print("NLP ANALYSIS COMPLETE!")
 print("=" * 80)
 print(f"  Posts analyzed: {len(df_text):,}")
 print(f"  Topics: {NUM_TOPICS} | Best: Topic {best_topic}")
-print(f"  Sentiment: {sentiment_dist.get('positive', 0)} pos / {sentiment_dist.get('neutral', 0)} neu / {sentiment_dist.get('negative', 0)} neg")
+print(f"  Sentiment: {sentiment_dist.get('positive', 0)} pos / {sentiment_dist.get('neutral', 0)} neu / {sentiment_dist.get('negative', 0)} neg")  # noqa: E501
 print(f"  Top keyword: {top_words[0][0]} ({top_words[0][1]} times)")
