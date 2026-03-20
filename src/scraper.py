@@ -1,6 +1,6 @@
 """
 Apify Data Fetcher.
-Mode 1 (default): Fetch data from the latest Apify dataset (pre-scheduled run) — instant.
+Mode 1 (default): Fetch data from the latest Apify dataset (pre-scheduled run) — instant.  # noqa: E501
 Mode 2 (--trigger): Trigger a new Actor run and wait — slow, 10-15min.
 """
 import os
@@ -17,7 +17,7 @@ from apify_client import ApifyClient
 from dotenv import load_dotenv
 
 load_dotenv()
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s [%(levelname)s] %(message)s")  # noqa: E501
 logger = logging.getLogger(__name__)
 
 ACTOR_ID = "apify/facebook-posts-scraper"
@@ -39,16 +39,16 @@ def fetch_latest_dataset(client: ApifyClient, config: dict) -> list[dict]:
         logger.info(f"Fetching latest run dataset from Actor: {ACTOR_ID}")
         runs = client.actor(ACTOR_ID).runs().list(limit=1, desc=True)
         if not runs.items:
-            logger.error("No previous runs found. Run the Actor manually on Apify Console first, or use --trigger.")
+            logger.error("No previous runs found. Run the Actor manually on Apify Console first, or use --trigger.")  # noqa: E501
             return []
         last_run = runs.items[0]
         dataset_id = last_run.get("defaultDatasetId")
         run_status = last_run.get("status")
         finished_at = last_run.get("finishedAt", "unknown")
-        logger.info(f"Latest run: status={run_status}, finished={finished_at}, dataset={dataset_id}")
+        logger.info(f"Latest run: status={run_status}, finished={finished_at}, dataset={dataset_id}")  # noqa: E501
 
         if run_status != "SUCCEEDED":
-            logger.warning(f"Latest run status is '{run_status}', data may be incomplete")
+            logger.warning(f"Latest run status is '{run_status}', data may be incomplete")  # noqa: E501
 
         items = list(client.dataset(dataset_id).iterate_items())
 
@@ -58,7 +58,7 @@ def fetch_latest_dataset(client: ApifyClient, config: dict) -> list[dict]:
 
 def trigger_new_run(client: ApifyClient, config: dict) -> list[dict]:
     scraper_cfg = config.get("scraper", {})
-    page_url = config.get("page", {}).get("url", "https://www.facebook.com/hoaloprisonrelic/")
+    page_url = config.get("page", {}).get("url", "https://www.facebook.com/hoaloprisonrelic/")  # noqa: E501
     max_posts = scraper_cfg.get("max_posts", 500)
 
     run_input = {
@@ -72,7 +72,7 @@ def trigger_new_run(client: ApifyClient, config: dict) -> list[dict]:
 
     run = client.actor(ACTOR_ID).call(run_input=run_input)
     dataset_id = run["defaultDatasetId"]
-    logger.info(f"Run finished. Dataset: https://console.apify.com/storage/datasets/{dataset_id}")
+    logger.info(f"Run finished. Dataset: https://console.apify.com/storage/datasets/{dataset_id}")  # noqa: E501
 
     items = list(client.dataset(dataset_id).iterate_items())
     logger.info(f"Collected {len(items)} items")
@@ -119,7 +119,7 @@ def main():
     parser = argparse.ArgumentParser(description="Fetch Facebook data from Apify")
     parser.add_argument("--config", default="config/pipeline.yaml")
     parser.add_argument("--output", default="data/raw")
-    parser.add_argument("--trigger", action="store_true", help="Trigger new Actor run instead of fetching latest dataset")
+    parser.add_argument("--trigger", action="store_true", help="Trigger new Actor run instead of fetching latest dataset")  # noqa: E501
     args = parser.parse_args()
 
     token = os.getenv("APIFY_API_TOKEN")
