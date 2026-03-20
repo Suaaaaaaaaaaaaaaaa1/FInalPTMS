@@ -1,0 +1,33 @@
+page:
+  name: "hoa_lo"
+  url: "https://www.facebook.com/hoaloprisonrelic/"
+
+scraper:
+  max_posts: 500
+  actor: "apify/facebook-posts-scraper"
+  dataset_id: null
+
+nlp:
+  lda:
+    n_topics: 7
+    passes: 10
+    random_state: 42
+  tfidf:
+    max_features: 100
+    ngram_range: [1, 2]
+    min_df: 3
+    max_df: 0.7
+
+strategy:
+  gemini_model: "gemini-2.5-flash"
+  max_tokens: 8192
+  temperature: 0.7
+  language: "vi"
+
+email:
+  smtp_host: "smtp.gmail.com"
+  smtp_port: 587
+  use_tls: true
+  subject_prefix: "[Hoa Lo Analysis]"
+  attach_report: true
+  attach_figures: true
